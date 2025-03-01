@@ -7,6 +7,23 @@ features:
   bot_user:
     display_name: Translator Bot
     always_online: true
+  slash_commands:
+    - command: /translate-on
+      description: Enable translations in this channel
+      usage_hint: "/translate-on"
+      should_escape: false
+    - command: /translate-off
+      description: Disable translations in this channel
+      usage_hint: "/translate-off"
+      should_escape: false
+    - command: /translate-toggle
+      description: Toggle translations on/off in this channel
+      usage_hint: "/translate-toggle"
+      should_escape: false
+    - command: /translate-status
+      description: Check if translations are enabled in this channel
+      usage_hint: "/translate-status"
+      should_escape: false
 
 oauth_config:
   scopes:
@@ -34,22 +51,4 @@ settings:
   interactivity:
     is_enabled: true
   socket_mode_enabled: true
-  token_rotation_enabled: false
-
-commands:
-  - command: /translate-on
-    description: Enable translations in this channel
-    usage_hint: "/translate-on"
-    should_escape: false
-  - command: /translate-off
-    description: Disable translations in this channel
-    usage_hint: "/translate-off"
-    should_escape: false
-  - command: /translate-toggle
-    description: Toggle translations on/off in this channel
-    usage_hint: "/translate-toggle"
-    should_escape: false
-  - command: /translate-status
-    description: Check if translations are enabled in this channel
-    usage_hint: "/translate-status"
-    should_escape: false 
+  token_rotation_enabled: false 
