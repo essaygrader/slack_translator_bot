@@ -1,0 +1,55 @@
+display_information:
+  name: Slack Translator Bot
+  description: A bot that automatically translates messages to multiple languages using Google Gemini AI
+  background_color: "#4A154B"
+
+features:
+  bot_user:
+    display_name: Translator Bot
+    always_online: true
+
+oauth_config:
+  scopes:
+    bot:
+      - channels:history
+      - channels:read
+      - chat:write
+      - groups:history
+      - groups:read
+      - im:history
+      - im:read
+      - mpim:history
+      - mpim:read
+      - reactions:read
+      - reactions:write
+      - commands
+
+settings:
+  event_subscriptions:
+    bot_events:
+      - message.channels
+      - message.groups
+      - message.im
+      - message.mpim
+  interactivity:
+    is_enabled: true
+  socket_mode_enabled: true
+  token_rotation_enabled: false
+
+commands:
+  - command: /translate-on
+    description: Enable translations in this channel
+    usage_hint: "/translate-on"
+    should_escape: false
+  - command: /translate-off
+    description: Disable translations in this channel
+    usage_hint: "/translate-off"
+    should_escape: false
+  - command: /translate-toggle
+    description: Toggle translations on/off in this channel
+    usage_hint: "/translate-toggle"
+    should_escape: false
+  - command: /translate-status
+    description: Check if translations are enabled in this channel
+    usage_hint: "/translate-status"
+    should_escape: false 
