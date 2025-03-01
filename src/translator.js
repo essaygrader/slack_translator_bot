@@ -63,60 +63,72 @@ function getLanguageName(langCode) {
 }
 
 /**
- * Detect the language of a text using Google Gemini
+ * Detects the language of the given text using Gemini
  * @param {string} text - The text to detect language for
  * @returns {Promise<string>} - The detected language code
  */
 async function detectLanguage(text) {
   try {
-    const prompt = `Detect the language of the following text. 
-    Only return the ISO 639-1 language code (like 'en', 'es', 'fr', etc.), nothing else:
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-pro' });
     
-    "${text}"`;
+    const prompt = `
+    Detect the language of the following text and respond with ONLY the ISO 639-1 language code (e.g., 'en' for English, 'es' for Spanish, etc.).
+    
+    Text: "${text}"
+    
+    Language code:
+    `;
     
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const detectedLang = response.text().trim().toLowerCase();
+    const response = result.response;
+    const languageCode = response.text().trim().toLowerCase();
     
-    debug('Detected language', detectedLang);
+    // If the detected language is not in our supported languages, default to 'en'
+    const supportedLanguages = parseCommaSeparatedList(process.env.SUPPORTED_LANGUAGES, ['en']);
+    if (!supportedLanguages.includes(languageCode)) {
+      debug(`Detected language ${languageCode} is not in supported languages, defaulting to 'en'`);
+      return 'en';
+    }
     
-    return detectedLang;
+    return languageCode;
   } catch (error) {
-    logError('Language detection error', error);
-    return 'unknown';
+    logError('Error detecting language', error);
+    return 'en'; // Default to English on error
   }
 }
 
 /**
  * Translates text to all supported languages
  * @param {string} text - The text to translate
- * @param {string} sourceLang - The source language code (optional)
- * @returns {Promise<Object>} - Object with language codes as keys and translations as values
+ * @returns {Promise<Object>} - Object with language codes as keys and translated text as values
  */
-async function translateToAllLanguages(text, sourceLang = null) {
-  // Get supported languages from environment variable
-  const supportedLanguages = parseCommaSeparatedList(process.env.SUPPORTED_LANGUAGES, ['en']);
-  
-  // Detect source language if not provided
-  if (!sourceLang) {
-    sourceLang = await detectLanguage(text);
+async function translateToAllLanguages(text) {
+  try {
+    // Get supported languages from environment variable
+    const supportedLanguages = parseCommaSeparatedList(process.env.SUPPORTED_LANGUAGES, ['en']);
+    
+    // Detect the language of the original text
+    const detectedLanguage = await detectLanguage(text);
+    debug('Detected language:', detectedLanguage);
+    
+    // Initialize results object with the original text in the detected language
+    const results = {};
+    
+    // Translate to all other supported languages
+    const translationPromises = supportedLanguages
+      .filter(lang => lang !== detectedLanguage) // Skip the original language
+      .map(async (targetLang) => {
+        const translated = await translateText(text, targetLang);
+        results[targetLang] = translated;
+      });
+    
+    await Promise.all(translationPromises);
+    
+    return results;
+  } catch (error) {
+    logError('Error translating to all languages', error);
+    return {};
   }
-  
-  const translations = {};
-  
-  // Add original text with detected language
-  translations[sourceLang] = text;
-  
-  // Translate to all other supported languages
-  const translationPromises = supportedLanguages
-    .filter(lang => lang !== sourceLang) // Skip source language
-    .map(async (lang) => {
-      translations[lang] = await translateText(text, lang);
-    });
-  
-  await Promise.all(translationPromises);
-  
-  return translations;
 }
 
 module.exports = {
