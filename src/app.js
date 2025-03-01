@@ -3,6 +3,7 @@ const { App } = require('@slack/bolt');
 const { translateToAllLanguages, getLanguageName } = require('./translator');
 const { parseCommaSeparatedList, parseBoolean, logError, debug } = require('./utils');
 const { isTranslationEnabled, enableTranslation, disableTranslation, toggleTranslation } = require('./channelPreferences');
+const http = require('http');
 
 // Initialize the Slack app
 const app = new App({
@@ -10,20 +11,22 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   socketMode: true,
   appToken: process.env.SLACK_APP_TOKEN,
-  customRoutes: [
-    {
-      path: '/health',
-      method: ['GET'],
-      handler: (req, res) => {
-        res.writeHead(200);
-        res.end(JSON.stringify({
-          status: 'ok',
-          timestamp: new Date().toISOString(),
-          uptime: process.uptime()
-        }));
-      },
-    },
-  ],
+  // Remove customRoutes as we'll handle this with a separate HTTP server
+});
+
+// Create a simple HTTP server for Heroku
+const server = http.createServer((req, res) => {
+  if (req.url === '/health') {
+    res.writeHead(200);
+    res.end(JSON.stringify({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    }));
+  } else {
+    res.writeHead(200);
+    res.end('Slack Translator Bot is running!');
+  }
 });
 
 // Store processed message IDs to avoid duplicate translations
@@ -181,10 +184,16 @@ function formatTranslations(translations) {
 // Start the app
 (async () => {
   try {
+    // Start the Slack app
+    await app.start();
+    console.log('⚡️ Slack Translator Bot is running!');
+    
+    // Start the HTTP server on the port Heroku provides
     const port = process.env.PORT || 3000;
-    await app.start(port);
-    console.log(`⚡️ Slack Translator Bot is running on port ${port}!`);
-    console.log(`Health check available at http://localhost:${port}/health`);
+    server.listen(port, () => {
+      console.log(`HTTP server listening on port ${port}!`);
+      console.log(`Health check available at http://localhost:${port}/health`);
+    });
     
     const supportedLanguages = parseCommaSeparatedList(process.env.SUPPORTED_LANGUAGES, ['en']);
     console.log(`Supported languages: ${supportedLanguages.join(', ')}`);

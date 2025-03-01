@@ -90,6 +90,52 @@ cp .env.example .env
 npm start
 ```
 
+## Deploying to Heroku
+
+You can deploy this bot to Heroku to run it 24/7:
+
+1. **Create a Heroku account and install the Heroku CLI**
+
+2. **Login to Heroku and create a new app**
+
+```bash
+heroku login
+heroku create your-app-name
+```
+
+3. **Set up environment variables on Heroku**
+
+```bash
+heroku config:set SLACK_BOT_TOKEN=xoxb-your-token
+heroku config:set SLACK_SIGNING_SECRET=your-signing-secret
+heroku config:set SLACK_APP_TOKEN=xapp-your-app-token
+heroku config:set GEMINI_API_KEY=your-gemini-api-key
+heroku config:set GEMINI_MODEL=gemini-pro
+heroku config:set SUPPORTED_LANGUAGES=en,es,fr,de
+```
+
+4. **Deploy to Heroku**
+
+```bash
+git push heroku main
+```
+
+5. **Verify the app is running**
+
+```bash
+heroku logs --tail
+```
+
+### Troubleshooting Heroku Deployment
+
+If you encounter an R10 boot timeout error (Web process failed to bind to $PORT within 60 seconds of launch), make sure:
+
+1. Your application is correctly binding to the port provided by Heroku via the `PORT` environment variable
+2. You're not using a hardcoded port number in your application
+3. The application is properly starting both the Slack socket mode connection and an HTTP server that binds to the port
+
+The bot uses Socket Mode to connect to Slack, but Heroku requires a web process that binds to a port. The application handles this by running both the Socket Mode connection and a simple HTTP server.
+
 ## Usage
 
 1. Invite the bot to any channel where you want translations to happen
