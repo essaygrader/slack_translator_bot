@@ -175,8 +175,18 @@ app.event('message', async ({ event, client }) => {
 function formatTranslations(translations) {
   const supportedLanguages = parseCommaSeparatedList(process.env.SUPPORTED_LANGUAGES, ['en']);
   
-  return Object.entries(translations)
-    .filter(([lang]) => supportedLanguages.includes(lang))
+  // Filter translations to only include supported languages
+  const filteredTranslations = Object.entries(translations)
+    .filter(([lang]) => supportedLanguages.includes(lang));
+  
+  // If there's only one language in the translations, don't show the prefix
+  if (filteredTranslations.length === 1) {
+    const [, text] = filteredTranslations[0];
+    return text;
+  }
+  
+  // Otherwise, format with language prefixes
+  return filteredTranslations
     .map(([lang, text]) => `*${getLanguageName(lang)}*: ${text}`)
     .join('\n\n');
 }
