@@ -98,36 +98,38 @@ async function detectLanguage(text) {
 }
 
 /**
- * Translates text to all supported languages
+ * Translates text to multiple languages
  * @param {string} text - The text to translate
+ * @param {string[]} [languages] - Optional array of language codes to translate to
  * @returns {Promise<Object>} - Object with language codes as keys and translated text as values
  */
-async function translateToAllLanguages(text) {
+async function translateToAllLanguages(text, languages) {
   try {
-    // Get supported languages from environment variable
-    const supportedLanguages = parseCommaSeparatedList(process.env.SUPPORTED_LANGUAGES, ['en']);
+    // If no languages specified, use all supported languages
+    const targetLanguages = languages || Object.keys(languageNames);
     
-    // Detect the language of the original text
-    const detectedLanguage = await detectLanguage(text);
-    debug('Detected language:', detectedLanguage);
+    // Detect the source language
+    const sourceLang = await detectLanguage(text);
+    debug('Detected source language', sourceLang);
     
-    // Initialize results object with the original text in the detected language
-    const results = {};
+    // Remove source language from target languages if present
+    const filteredLanguages = targetLanguages.filter(lang => lang !== sourceLang);
     
-    // Translate to all other supported languages
-    const translationPromises = supportedLanguages
-      .filter(lang => lang !== detectedLanguage) // Skip the original language
-      .map(async (targetLang) => {
-        const translated = await translateText(text, targetLang);
-        results[targetLang] = translated;
-      });
+    // Translate to each target language
+    const translations = {};
+    for (const lang of filteredLanguages) {
+      try {
+        translations[lang] = await translateText(text, lang);
+      } catch (error) {
+        logError(`Error translating to ${lang}`, error);
+        // Continue with other languages even if one fails
+      }
+    }
     
-    await Promise.all(translationPromises);
-    
-    return results;
+    return translations;
   } catch (error) {
-    logError('Error translating to all languages', error);
-    return {};
+    logError('Error in translateToAllLanguages', error);
+    throw error;
   }
 }
 

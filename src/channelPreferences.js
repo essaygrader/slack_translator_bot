@@ -1,11 +1,12 @@
 /**
  * Channel preferences management for the Slack Translator Bot
- * Allows enabling/disabling translations per channel
+ * Allows enabling/disabling translations per channel and setting channel-specific languages
  */
 
 // In-memory store for channel preferences
 // In a production environment, this should be replaced with a persistent database
 const channelPreferences = new Map();
+const channelLanguages = new Map();
 
 /**
  * Check if translations are enabled for a channel
@@ -45,6 +46,24 @@ function toggleTranslation(channelId) {
 }
 
 /**
+ * Set languages for a channel
+ * @param {string} channelId - The Slack channel ID
+ * @param {string[]} languages - Array of language codes
+ */
+function setChannelLanguages(channelId, languages) {
+  channelLanguages.set(channelId, languages);
+}
+
+/**
+ * Get languages for a channel
+ * @param {string} channelId - The Slack channel ID
+ * @returns {string[]|null} - Array of language codes or null if not set
+ */
+function getChannelLanguages(channelId) {
+  return channelLanguages.get(channelId) || null;
+}
+
+/**
  * Get all channel preferences
  * @returns {Object} - Object with channel IDs as keys and boolean status as values
  */
@@ -57,5 +76,7 @@ module.exports = {
   enableTranslation,
   disableTranslation,
   toggleTranslation,
+  setChannelLanguages,
+  getChannelLanguages,
   getAllChannelPreferences
 }; 

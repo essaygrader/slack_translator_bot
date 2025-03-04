@@ -2,7 +2,14 @@ require('dotenv').config();
 const { App } = require('@slack/bolt');
 const { translateToAllLanguages, getLanguageName } = require('./translator');
 const { parseCommaSeparatedList, parseBoolean, logError, debug } = require('./utils');
-const { isTranslationEnabled, enableTranslation, disableTranslation, toggleTranslation } = require('./channelPreferences');
+const { 
+  isTranslationEnabled, 
+  enableTranslation, 
+  disableTranslation, 
+  toggleTranslation,
+  setChannelLanguages,
+  getChannelLanguages
+} = require('./channelPreferences');
 const http = require('http');
 
 // Initialize the Slack app
@@ -112,6 +119,37 @@ app.command('/translate-status', async ({ command, ack, respond }) => {
   }
 });
 
+// Command to set languages for a channel
+app.command('/translate-languages', async ({ command, ack, respond }) => {
+  await ack();
+  
+  try {
+    const languages = parseCommaSeparatedList(command.text);
+    
+    if (languages.length === 0) {
+      await respond({
+        text: '❌ Please specify at least one language code. Example: `/translate-languages es,fr,de`',
+        response_type: 'ephemeral'
+      });
+      return;
+    }
+    
+    setChannelLanguages(command.channel_id, languages);
+    
+    const languageNames = languages.map(lang => getLanguageName(lang)).join(', ');
+    await respond({
+      text: `✅ Channel languages set to: ${languageNames}`,
+      response_type: 'in_channel'
+    });
+  } catch (error) {
+    logError('Error setting channel languages', error);
+    await respond({
+      text: `❌ Error setting channel languages: ${error.message}`,
+      response_type: 'ephemeral'
+    });
+  }
+});
+
 // Listen for message events
 app.event('message', async ({ event, client }) => {
   try {
@@ -148,11 +186,15 @@ app.event('message', async ({ event, client }) => {
     
     debug('Processing message', event);
     
-    // Translate the message to all supported languages
-    const translations = await translateToAllLanguages(textToTranslate);
+    // Get channel-specific languages or use default supported languages
+    const channelLanguages = getChannelLanguages(event.channel);
+    const languagesToUse = channelLanguages || parseCommaSeparatedList(process.env.SUPPORTED_LANGUAGES, ['en']);
+    
+    // Translate the message to specified languages
+    const translations = await translateToAllLanguages(textToTranslate, languagesToUse);
     
     // Format and post translations
-    const formattedTranslations = formatTranslations(translations);
+    const formattedTranslations = formatTranslations(translations, languagesToUse);
     
     // Message posting configuration
     const messageConfig = {
@@ -175,12 +217,10 @@ app.event('message', async ({ event, client }) => {
 });
 
 // Format translations for Slack message
-function formatTranslations(translations) {
-  const supportedLanguages = parseCommaSeparatedList(process.env.SUPPORTED_LANGUAGES, ['en']);
-  
-  // Filter translations to only include supported languages
+function formatTranslations(translations, languages) {
+  // Filter translations to only include specified languages
   const filteredTranslations = Object.entries(translations)
-    .filter(([lang]) => supportedLanguages.includes(lang));
+    .filter(([lang]) => languages.includes(lang));
   
   // If there's only one language in the translations, don't show the prefix
   if (filteredTranslations.length === 1) {
@@ -220,6 +260,7 @@ function formatTranslations(translations) {
     console.log('  /translate-off - Disable translations in a channel');
     console.log('  /translate-toggle - Toggle translations in a channel');
     console.log('  /translate-status - Check if translations are enabled');
+    console.log('  /translate-languages - Set languages for the channel (e.g., /translate-languages es,fr,de)');
   } catch (error) {
     logError('Failed to start the app', error);
     process.exit(1);
