@@ -13,8 +13,8 @@ const channelPreferences = new Map();
  * @returns {boolean} - Whether translations are enabled
  */
 function isTranslationEnabled(channelId) {
-  // Default to enabled if no preference is set
-  return channelPreferences.get(channelId) !== false;
+  // Default to disabled if no preference is set
+  return channelPreferences.get(channelId) === true;
 }
 
 /**

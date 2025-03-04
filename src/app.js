@@ -137,16 +137,19 @@ app.event('message', async ({ event, client }) => {
       return;
     }
     
-    // Check if translations are enabled for this channel
-    if (!isTranslationEnabled(event.channel)) {
-      debug('Translations disabled for channel', event.channel);
+    // Check if message contains +t flag or if translations are enabled for this channel
+    if (!event.text.includes('+t') && !isTranslationEnabled(event.channel)) {
+      debug('Translations disabled for channel and no +t flag found', event.channel);
       return;
     }
+    
+    // Remove the +t flag from the text if present
+    const textToTranslate = event.text.replace('+t', '').trim();
     
     debug('Processing message', event);
     
     // Translate the message to all supported languages
-    const translations = await translateToAllLanguages(event.text);
+    const translations = await translateToAllLanguages(textToTranslate);
     
     // Format and post translations
     const formattedTranslations = formatTranslations(translations);
