@@ -24,6 +24,10 @@ features:
       description: Check if translations are enabled in this channel
       usage_hint: "/translate-status"
       should_escape: false
+    - command: /translate-languages
+      description: Set specific languages for translation in this channel
+      usage_hint: "/translate-languages es,fr,de"
+      should_escape: false
 
 oauth_config:
   scopes:

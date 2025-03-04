@@ -24,6 +24,7 @@ const languageNames = {
   'pt': 'Portuguese',
   'ar': 'Arabic',
   'uk': 'Ukrainian',
+  'pl': 'Polish',
   // Add more languages as needed
 };
 
